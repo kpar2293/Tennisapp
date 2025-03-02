@@ -92,3 +92,14 @@ def clear_graph():
     global player_graph
     player_graph = nx.DiGraph()
     return {"message": "Graph cleared successfully"}
+
+@app.get("/view-graph/")
+def view_graph():
+    graph_data = {"nodes": [], "edges": []}
+    for node in player_graph.nodes:
+        # Add each node and its rating
+        graph_data["nodes"].append({"id": node, "rating": round(player_graph.nodes[node]["rating"], 2)})
+    for u, v, d in player_graph.edges(data=True):
+        # Add each edge (from winner to loser) with the rating change weight
+        graph_data["edges"].append({"source": u, "target": v, "weight": round(d["weight"], 2)})
+    return graph_data
