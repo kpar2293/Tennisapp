@@ -85,3 +85,10 @@ def sync_ratings():
     for player in player_graph.nodes:
         ratings[player] = round(player_graph.nodes[player]["rating"], 2)
     return ratings
+
+# Clear player graph
+@app.post("/clear-graph/")
+def clear_graph():
+    global player_graph
+    player_graph = nx.DiGraph()
+    return {"message": "Graph cleared successfully"}
