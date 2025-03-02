@@ -2,6 +2,11 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+class RatingUpdateRequest(BaseModel):
+    winner_rating: float
+    loser_rating: float
+    score_diff: int
+
 @app.get("/")
 def read_root():
     return {"message": "Tennis Rating API is running"}
@@ -14,16 +19,14 @@ def predict_outcome(player1_rating: float, player2_rating: float):
 
 # Endpoint for rating adjustments (Step 2)
 @app.post("/update-rating/")
-def update_rating(winner_rating: float, loser_rating: float, score_diff: int):
-    K = 5
-    margin_factor = 1 + (score_diff / 6)  # Example margin impact
-    expected_win = 1 / (1 + 10 ** ((loser_rating - winner_rating) / 50))
-    rating_change = K * margin_factor * (1 - expected_win)
+async def update_rating(data: RatingUpdateRequest):
+    winner_new_rating = data.winner_rating + (data.score_diff * 0.1)  # Example update logic
+    loser_new_rating = data.loser_rating - (data.score_diff * 0.1)
 
-    winner_new_rating = max(3, winner_rating + rating_change)
-    loser_new_rating = max(3, loser_rating - rating_change)
-
-    return {"winner_new_rating": winner_new_rating, "loser_new_rating": loser_new_rating}
+    return {
+        "winner_new_rating": round(winner_new_rating, 2),
+        "loser_new_rating": round(loser_new_rating, 2)
+    }
 
 # Endpoint for unplayed match predictions (Step 3)
 @app.post("/predict-unplayed/")
