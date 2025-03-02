@@ -25,7 +25,8 @@ class UnplayedMatchRequest(BaseModel):
 @app.post("/update-rating/")
 def update_rating(request: RatingUpdateRequest):
     K = 5  # Base K-factor
-    margin_factor = 1 + (request.score_diff / 6)  
+    expectedMargin = 2 + 0.5 * Math.abs(request.loser_rating - request.winner_rating)
+    margin_factor = 1 + Math.log((request.score_diff + 1) / (expectedMargin + 1))
 
     expected_win = 1 / (1 + 10 ** ((request.loser_rating - request.winner_rating) / 50))
     rating_change = K * margin_factor * (1 - expected_win)
