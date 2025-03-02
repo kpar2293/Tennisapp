@@ -25,8 +25,10 @@ class UnplayedMatchRequest(BaseModel):
 @app.post("/update-rating/")
 def update_rating(request: RatingUpdateRequest):
     K = 5  # Base K-factor
-    expectedMargin = 2 + 0.5 * Math.abs(request.loser_rating - request.winner_rating)
-    margin_factor = 1 + Math.log((request.score_diff + 1) / (expectedMargin + 1))
+
+    # ✅ Corrected Math functions
+    expected_margin = 2 + 0.5 * math.fabs(request.loser_rating - request.winner_rating)
+    margin_factor = 1 + math.log((request.score_diff + 1) / (expected_margin + 1))
 
     expected_win = 1 / (1 + 10 ** ((request.loser_rating - request.winner_rating) / 50))
     rating_change = K * margin_factor * (1 - expected_win)
@@ -34,19 +36,26 @@ def update_rating(request: RatingUpdateRequest):
     winner_new_rating = max(3, request.winner_rating + rating_change)
     loser_new_rating = max(3, request.loser_rating - rating_change)
 
-    # Update Graph
-    if request.winner not in player_graph:
+    # ✅ Corrected Graph Node Checking
+    if not player_graph.has_node(request.winner):
         player_graph.add_node(request.winner, rating=winner_new_rating)
-    if request.loser not in player_graph:
-        player_graph.add_node(request.loser, rating=loser_new_rating)
+    else:
+        player_graph.nodes[request.winner]["rating"] = winner_new_rating  # Update rating
 
+    if not player_graph.has_node(request.loser):
+        player_graph.add_node(request.loser, rating=loser_new_rating)
+    else:
+        player_graph.nodes[request.loser]["rating"] = loser_new_rating  # Update rating
+
+    # ✅ Corrected Edge Addition
     player_graph.add_edge(request.winner, request.loser, weight=rating_change)
 
     # Adjust past opponents (Graph Influence)
     dampening_factor = 0.1  
     for neighbor in player_graph.predecessors(request.loser):  # Players who lost to the loser
-        old_rating = player_graph.nodes[neighbor]["rating"]
-        player_graph.nodes[neighbor]["rating"] = max(3, old_rating - rating_change * dampening_factor)
+        if player_graph.has_node(neighbor):  # Ensure the node exists
+            old_rating = player_graph.nodes[neighbor]["rating"]
+            player_graph.nodes[neighbor]["rating"] = max(3, old_rating - rating_change * dampening_factor)
 
     return {
         "winner_new_rating": round(winner_new_rating, 2),
@@ -56,7 +65,7 @@ def update_rating(request: RatingUpdateRequest):
 # Predict unplayed match using mutual opponents
 @app.post("/predict-unplayed-match/")
 def predict_unplayed_match(request: UnplayedMatchRequest):
-    if request.player1 not in player_graph or request.player2 not in player_graph:
+    if not player_graph.has_node(request.player1) or not player_graph.has_node(request.player2):
         return {"error": "One or both players not found in the system"}
 
     mutual_opponents = list(set(player_graph.predecessors(request.player1)) & set(player_graph.predecessors(request.player2)))
