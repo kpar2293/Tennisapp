@@ -77,3 +77,11 @@ def predict_unplayed_match(request: UnplayedMatchRequest):
         estimated_rating_diff = (player_graph.nodes[request.player1]["rating"] - player_graph.nodes[request.player2]["rating"]) / 2
     
     return {"estimated_rating_diff": round(estimated_rating_diff, 2)}
+    
+# Sync app rating back to the sheet
+@app.get("/sync-ratings/")
+def sync_ratings():
+    ratings = {}
+    for player in player_graph.nodes:
+        ratings[player] = round(player_graph.nodes[player]["rating"], 2)
+    return ratings
